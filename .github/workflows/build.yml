@@ -9,11 +9,15 @@ jobs:
         with:
           submodules: recursive
 
-      - name: Force Fix iOS Version
+      - name: Fix Dependencies and Versions
         run: |
-          # Ищем файл и заменяем .v26 на .v15
+          # 1. Исправляем ошибку v26 (iOS 18)
           find . -name "Package.swift" -exec sed -i '' 's/\.v26/\.v15/g' {} +
-          echo "Version fixed from v26 to v15"
+          
+          # 2. Исправляем ошибку с веткой master -> main (для TDLibKit и других)
+          find . -name "Package.swift" -exec sed -i '' 's/branch: "master"/branch: "main"/g' {} +
+          
+          echo "All fixes applied!"
 
       - name: Select Xcode 16
         run: sudo xcode-select -s /Applications/Xcode_16.app
@@ -32,7 +36,6 @@ jobs:
       - name: Export
         run: |
           mkdir -p Payload
-          # Копируем приложение (ищем его во всех папках)
           find . -name "*.app" -type d -exec cp -R {} Payload/ \;
           zip -r AyuGram.ipa Payload
 
