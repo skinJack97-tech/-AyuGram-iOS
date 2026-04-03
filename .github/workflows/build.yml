@@ -9,21 +9,22 @@ jobs:
         with:
           submodules: recursive
           
+      - name: List Files
+        run: ls -R
+          
       - name: Build IPA
         run: |
-          # Ищем файл Make.py автоматически
-          MAKE_PATH=$(find . -name "Make.py" | head -n 1)
-          echo "Found Make at: $MAKE_PATH"
+          # Ищем любой файл python для сборки
+          BUILD_SCRIPT=$(find . -name "build.py" -o -name "Make.py" | head -n 1)
+          echo "Using script: $BUILD_SCRIPT"
           
-          python3 "$MAKE_PATH" \
-          --cacheDir="$HOME/telegram-bazel-cache" \
+          python3 "$BUILD_SCRIPT" \
           build \
           --configuration=release \
-          --buildNumber=100 \
-          --installGuide=false
+          --buildNumber=100
           
       - name: Upload
         uses: actions/upload-artifact@v4
         with:
           name: AyuGram-Final-IPA
-          path: "**/artifacts/*.ipa"
+          path: "**/*.ipa"
