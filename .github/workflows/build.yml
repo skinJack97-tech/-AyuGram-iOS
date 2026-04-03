@@ -1,0 +1,28 @@
+name: Build My AyuGram
+on: workflow_dispatch
+
+jobs:
+  build:
+    runs-on: macos-13
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: recursive
+          
+      - name: Install Bazel
+        run: brew install bazel
+        
+      - name: Build IPA
+        run: |
+          python3 build-system/Make/Make.py \
+          --cacheDir="$HOME/telegram-bazel-cache" \
+          build \
+          --configuration=release \
+          --buildNumber=100 \
+          --installGuide=false
+          
+      - name: Upload
+        uses: actions/upload-artifact@v4
+        with:
+          name: AyuGram-Final-IPA
+          path: build/artifacts/*.ipa
