@@ -20,15 +20,15 @@ jobs:
       - name: Build & Archive
         run: |
           cd iOS
-          # Добавляем флаги игнорирования ошибок компиляции и проверок
+          # Принудительно ставим Swift 5 и отключаем предупреждения как ошибки
           xcodebuild archive \
             -scheme AyuGram \
             -destination "generic/platform=iOS" \
             -archivePath build/AyuGram.xcarchive \
-            -skipPackagePluginValidation \
             CODE_SIGNING_ALLOWED=NO \
             CODE_SIGNING_REQUIRED=NO \
             CODE_SIGN_IDENTITY="-" \
+            SWIFT_VERSION=5.0 \
             OTHER_SWIFT_FLAGS="-suppress-warnings" \
             -allowProvisioningUpdates
 
