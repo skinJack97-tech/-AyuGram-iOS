@@ -11,17 +11,15 @@ jobs:
           
       - name: Build IPA
         run: |
-          # Ищем, где спрятан Make.py
-          MAKE_FILE=$(find . -name "Make.py" | head -n 1)
-          MAKE_DIR=$(dirname "$MAKE_FILE")
-          # Поднимаемся на две папки выше от Make.py, так как он обычно в build-system/Make/
-          ROOT_DIR=$(cd "$MAKE_DIR/../.." && pwd)
+          # Находим точный путь к Make.py
+          MAKE_PATH=$(find $GITHUB_WORKSPACE -name "Make.py" | head -n 1)
+          MAKE_DIR=$(dirname "$MAKE_PATH")
           
-          echo "Found Make.py at: $MAKE_FILE"
-          echo "Root directory for build: $ROOT_DIR"
+          echo "Full path to script: $MAKE_PATH"
           
-          cd "$ROOT_DIR"
-          python3 build-system/Make/Make.py \
+          # Переходим в папку со скриптом и запускаем его
+          cd "$MAKE_DIR"
+          python3 Make.py \
           --cacheDir="$HOME/telegram-bazel-cache" \
           build \
           --configuration=release \
@@ -32,4 +30,4 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: AyuGram-Final-IPA
-          path: "**/artifacts/*.ipa"
+          path: "**/*.ipa"
