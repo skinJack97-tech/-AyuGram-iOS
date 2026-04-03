@@ -9,9 +9,6 @@ jobs:
         with:
           submodules: recursive
           
-      - name: Install Bazel
-        run: brew install bazel
-        
       - name: Build IPA
         run: |
           python3 build-system/Make/Make.py \
