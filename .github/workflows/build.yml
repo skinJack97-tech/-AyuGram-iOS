@@ -11,9 +11,7 @@ jobs:
 
       - name: Fix Versions
         run: |
-          # Меняем iOS 18 (v26) на iOS 15, чтобы Xcode не пугался
           find . -name "Package.swift" -exec sed -i '' 's/\.v26/\.v15/g' {} +
-          # Исправляем ветки master на main
           find . -name "Package.swift" -exec sed -i '' 's/branch: "master"/branch: "main"/g' {} +
 
       - name: Select Xcode 16
@@ -22,13 +20,12 @@ jobs:
       - name: Build and Archive
         run: |
           cd iOS
-          # Добавляем флаг пропуска валидации зависимостей, чтобы убрать ошибку 70
-          xcodebuild archive \
+          # Очищаем кэш и собираем максимально стандартным методом
+          xcodebuild clean archive \
             -scheme AyuGram \
             -configuration Release \
             -destination "generic/platform=iOS" \
             -archivePath build/AyuGram.xcarchive \
-            -skipPackageDependencyValidation \
             CODE_SIGNING_ALLOWED=NO \
             CODE_SIGNING_REQUIRED=NO \
             CODE_SIGN_IDENTITY=""
@@ -36,7 +33,6 @@ jobs:
       - name: Export IPA
         run: |
           mkdir -p Payload
-          # Ищем приложение более надежным способом
           find iOS/build/AyuGram.xcarchive/Products/Applications -name "*.app" -type d -exec cp -R {} Payload/ \;
           zip -r AyuGram.ipa Payload
 
