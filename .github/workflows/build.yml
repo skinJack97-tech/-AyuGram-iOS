@@ -3,13 +3,14 @@ on: workflow_dispatch
 
 jobs:
   build:
+    # Это главная строка, которая уберет ошибку v26
     runs-on: macos-15
     steps:
       - uses: actions/checkout@v4
         with:
           submodules: recursive
           
-      - name: Build with Xcode
+      - name: Build
         run: |
           cd iOS
           xcodebuild archive \
@@ -20,15 +21,14 @@ jobs:
             CODE_SIGNING_REQUIRED=NO \
             CODE_SIGN_IDENTITY=""
             
-      - name: Export IPA
+      - name: Export
         run: |
-          mkdir -p build/Payload
-          cp -R iOS/build/AyuGram.xcarchive/Products/Applications/*.app build/Payload/
-          cd build
+          mkdir -p Payload
+          cp -R iOS/build/AyuGram.xcarchive/Products/Applications/*.app Payload/
           zip -r AyuGram.ipa Payload
           
       - name: Upload
         uses: actions/upload-artifact@v4
         with:
           name: AyuGram-Final-IPA
-          path: build/AyuGram.ipa
+          path: AyuGram.ipa
