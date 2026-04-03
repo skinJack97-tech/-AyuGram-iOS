@@ -1,19 +1,36 @@
-name: Debug Repository Structure
+name: Build My AyuGram
 on: workflow_dispatch
 
 jobs:
-  debug:
+  build:
     runs-on: macos-latest
     steps:
       - uses: actions/checkout@v4
         with:
           submodules: recursive
           
-      - name: Show all files
+      - name: Build with Xcode
         run: |
-          echo "--- Root directory ---"
-          ls -F
-          echo "--- iOS directory ---"
-          ls -F iOS/ || echo "Folder iOS not found"
-          echo "--- Searching for any python scripts ---"
-          find . -name "*.py"
+          # Заходим в папку с проектом
+          cd iOS
+          
+          # Запускаем официальную сборку Xcode для архитектуры iPhone
+          xcodebuild archive \
+            -scheme AyuGram \
+            -destination "generic/platform=iOS" \
+            -archivePath build/AyuGram.xcarchive \
+            CODE_SIGNING_ALLOWED=NO
+            
+      - name: Export IPA
+        run: |
+          # Создаем папку для IPA и упаковываем приложение
+          mkdir -p build/artifacts
+          mv iOS/build/AyuGram.xcarchive/Products/Applications/*.app iOS/build/artifacts/Payload
+          cd iOS/build/artifacts
+          zip -r AyuGram.ipa Payload
+          
+      - name: Upload
+        uses: actions/upload-artifact@v4
+        with:
+          name: AyuGram-Final-IPA
+          path: iOS/build/artifacts/AyuGram.ipa
