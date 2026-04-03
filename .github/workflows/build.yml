@@ -1,15 +1,11 @@
 name: Build My AyuGram
-
-on:
-  workflow_dispatch
+on: workflow_dispatch
 
 jobs:
   build:
     runs-on: macos-15
-
     steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
+      - uses: actions/checkout@v4
         with:
           submodules: recursive
 
@@ -19,73 +15,40 @@ jobs:
           find . -name "Package.swift" -exec sed -i '' 's/\.v24/\.v26/g' {} +
           find . -name "Package.swift" -exec sed -i '' 's/branch: "master"/branch: "main"/g' {} +
 
-      - name: Fix Skip Install for Archive
-        run: |
-          echo "🔧 Fixing Skip Install = YES → NO ..."
-          find . -name "project.pbxproj" -exec sed -i '' 's/SKIP_INSTALL = YES;/SKIP_INSTALL = NO;/g' {} +
-          find . -name "project.pbxproj" -exec sed -i '' 's/SKIP_INSTALL = YES/SKIP_INSTALL = NO/g' {} +
-          echo "✅ Skip Install fixed"
-
       - name: Select Xcode 16
+        run: sudo xcode-select -s /Applications/Xcode_16.app
+
+      - name: Install SDK & Resolve Deps
         run: |
-          sudo xcode-select -s /Applications/Xcode_16.app
-          xcodebuild -version
-
-      - name: Install iOS 18 SDK
-        run: xcodebuild -downloadPlatform iOS || true
-
-      - name: Clean DerivedData
-        run: rm -rf ~/Library/Developer/Xcode/DerivedData
+          xcodebuild -downloadPlatform iOS || true
+          cd iOS
+          # Ключевой шаг: принудительно качаем все библиотеки
+          xcodebuild -resolvePackageDependencies
 
       - name: Build & Archive
         run: |
           cd iOS
-          xcodebuild clean archive \
+          # Убираем флаг clean, чтобы не удалять скачанные зависимости
+          xcodebuild archive \
             -scheme AyuGram \
-            -configuration Release \
             -destination "generic/platform=iOS" \
             -archivePath build/AyuGram.xcarchive \
             CODE_SIGNING_ALLOWED=NO \
             CODE_SIGNING_REQUIRED=NO \
             CODE_SIGN_IDENTITY="-" \
-            DEVELOPMENT_TEAM="" \
-            PROVISIONING_PROFILE_SPECIFIER="" \
-            CODE_SIGN_STYLE=Manual \
-            | tee build.log
-
-      - name: Debug - Show archive structure
-        run: |
-          echo "=== build directory ==="
-          ls -la iOS/build/ || true
-          echo "=== xcarchive ==="
-          ls -la iOS/build/AyuGram.xcarchive/ || true
-          echo "=== Applications ==="
-          ls -la iOS/build/AyuGram.xcarchive/Products/Applications/ || true
-          echo "=== Last 60 lines of build.log ==="
-          tail -n 60 iOS/build.log || true
+            -allowProvisioningUpdates
 
       - name: Export IPA
         run: |
-          cd iOS
-          if [ ! -d "build/AyuGram.xcarchive/Products/Applications" ] || [ -z "$(ls -A build/AyuGram.xcarchive/Products/Applications/ 2>/dev/null)" ]; then
-            echo "❌ xcarchive всё ещё пустой!"
-            exit 1
-          fi
-          
           mkdir -p Payload
-          find build/AyuGram.xcarchive/Products/Applications -name "*.app" -type d -exec cp -R {} Payload/ \;
+          # Ищем приложение более гибким способом
+          APP_PATH=$(find iOS/build/AyuGram.xcarchive -name "*.app" -type d | head -n 1)
+          if [ -z "$APP_PATH" ]; then echo "❌ Приложение не найдено!"; exit 1; fi
+          cp -R "$APP_PATH" Payload/
           zip -r AyuGram.ipa Payload
-          echo "✅ IPA created successfully"
 
       - name: Upload IPA
         uses: actions/upload-artifact@v4
         with:
           name: AyuGram-Final-IPA
-          path: iOS/AyuGram.ipa
-
-      - name: Upload Build Log
-        if: always()
-        uses: actions/upload-artifact@v4
-        with:
-          name: Build-Log
-          path: iOS/build.log
+          path: AyuGram.ipa
