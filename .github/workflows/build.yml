@@ -8,10 +8,16 @@ jobs:
       - uses: actions/checkout@v4
         with:
           submodules: recursive
-          
+
+      - name: Force Fix iOS Version
+        run: |
+          # Ищем файл и заменяем .v26 на .v15
+          find . -name "Package.swift" -exec sed -i '' 's/\.v26/\.v15/g' {} +
+          echo "Version fixed from v26 to v15"
+
       - name: Select Xcode 16
         run: sudo xcode-select -s /Applications/Xcode_16.app
-          
+
       - name: Build
         run: |
           cd iOS
@@ -22,13 +28,14 @@ jobs:
             CODE_SIGNING_ALLOWED=NO \
             CODE_SIGNING_REQUIRED=NO \
             CODE_SIGN_IDENTITY=""
-            
+
       - name: Export
         run: |
           mkdir -p Payload
-          cp -R iOS/build/AyuGram.xcarchive/Products/Applications/*.app Payload/
+          # Копируем приложение (ищем его во всех папках)
+          find . -name "*.app" -type d -exec cp -R {} Payload/ \;
           zip -r AyuGram.ipa Payload
-          
+
       - name: Upload
         uses: actions/upload-artifact@v4
         with:
