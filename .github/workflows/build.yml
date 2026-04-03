@@ -9,18 +9,20 @@ jobs:
         with:
           submodules: recursive
 
-      - name: Force Version Downgrade
+      - name: Fix Project Files
         run: |
-          # Меняем iOS 18 (.v26) на iOS 17 (.v24), которую Xcode 16 точно знает
-          find . -name "Package.swift" -exec sed -i '' 's/\.v26/\.v24/g' {} +
-          # На всякий случай меняем и на .v15, если где-то остались старые ссылки
-          find . -name "Package.swift" -exec sed -i '' 's/\.v26/\.v15/g' {} +
-          # Исправляем ветки master на main
+          # Возвращаем v26 (iOS 18), так как сервер все равно ее ищет
+          find . -name "Package.swift" -exec sed -i '' 's/\.v15/\.v26/g' {} +
+          find . -name "Package.swift" -exec sed -i '' 's/\.v24/\.v26/g' {} +
           find . -name "Package.swift" -exec sed -i '' 's/branch: "master"/branch: "main"/g' {} +
-          echo "Versions downgraded to iOS 17/15"
 
       - name: Select Xcode 16
         run: sudo xcode-select -s /Applications/Xcode_16.app
+
+      - name: Install iOS 18 SDK
+        run: |
+          # Это решит ошибку "iOS 18.0 is not installed"
+          xcodebuild -downloadPlatform iOS
 
       - name: Build
         run: |
@@ -29,10 +31,10 @@ jobs:
             -scheme AyuGram \
             -destination "generic/platform=iOS" \
             -archivePath build/AyuGram.xcarchive \
-            -skipPackageDependencyValidation \
             CODE_SIGNING_ALLOWED=NO \
             CODE_SIGNING_REQUIRED=NO \
-            CODE_SIGN_IDENTITY=""
+            CODE_SIGN_IDENTITY="" \
+            -quiet
 
       - name: Export
         run: |
