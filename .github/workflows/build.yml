@@ -9,11 +9,15 @@ jobs:
         with:
           submodules: recursive
 
-      - name: Patch Project
+      - name: Force Version Downgrade
         run: |
-          # Исправляем только критические нестыковки в версии и ветках
+          # Меняем iOS 18 (.v26) на iOS 17 (.v24), которую Xcode 16 точно знает
+          find . -name "Package.swift" -exec sed -i '' 's/\.v26/\.v24/g' {} +
+          # На всякий случай меняем и на .v15, если где-то остались старые ссылки
           find . -name "Package.swift" -exec sed -i '' 's/\.v26/\.v15/g' {} +
+          # Исправляем ветки master на main
           find . -name "Package.swift" -exec sed -i '' 's/branch: "master"/branch: "main"/g' {} +
+          echo "Versions downgraded to iOS 17/15"
 
       - name: Select Xcode 16
         run: sudo xcode-select -s /Applications/Xcode_16.app
@@ -25,6 +29,7 @@ jobs:
             -scheme AyuGram \
             -destination "generic/platform=iOS" \
             -archivePath build/AyuGram.xcarchive \
+            -skipPackageDependencyValidation \
             CODE_SIGNING_ALLOWED=NO \
             CODE_SIGNING_REQUIRED=NO \
             CODE_SIGN_IDENTITY=""
@@ -32,7 +37,6 @@ jobs:
       - name: Export
         run: |
           mkdir -p Payload
-          # Ищем приложение внутри архива и копируем его для упаковки в IPA
           find iOS/build/AyuGram.xcarchive/Products/Applications -name "*.app" -type d -exec cp -R {} Payload/ \;
           zip -r AyuGram.ipa Payload
 
