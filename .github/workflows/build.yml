@@ -11,10 +11,16 @@ jobs:
           
       - name: Build IPA
         run: |
-          # Переходим в папку iOS, где лежат скрипты
-          cd iOS
+          # Ищем, где спрятан Make.py
+          MAKE_FILE=$(find . -name "Make.py" | head -n 1)
+          MAKE_DIR=$(dirname "$MAKE_FILE")
+          # Поднимаемся на две папки выше от Make.py, так как он обычно в build-system/Make/
+          ROOT_DIR=$(cd "$MAKE_DIR/../.." && pwd)
           
-          # Запускаем сборку из правильного места
+          echo "Found Make.py at: $MAKE_FILE"
+          echo "Root directory for build: $ROOT_DIR"
+          
+          cd "$ROOT_DIR"
           python3 build-system/Make/Make.py \
           --cacheDir="$HOME/telegram-bazel-cache" \
           build \
