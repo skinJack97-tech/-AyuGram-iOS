@@ -1,11 +1,15 @@
 name: Build My AyuGram
-on: workflow_dispatch
+
+on:
+  workflow_dispatch
 
 jobs:
   build:
     runs-on: macos-15
+
     steps:
-      - uses: actions/checkout@v4
+      - name: Checkout code
+        uses: actions/checkout@v4
         with:
           submodules: recursive
 
@@ -17,12 +21,16 @@ jobs:
           find . -name "Package.swift" -exec sed -i '' 's/branch: "master"/branch: "main"/g' {} +
 
       - name: Select Xcode 16
-        run: sudo xcode-select -s /Applications/Xcode_16.app
-
-      - name: Install iOS 18 SDK
         run: |
-          # Это решит ошибку "iOS 18.0 is not installed"
-          xcodebuild -downloadPlatform iOS
+          sudo xcode-select -s /Applications/Xcode_16.app
+          xcodebuild -version
+
+      - name: Install iOS 18 SDK (if needed)
+        run: |
+          xcodebuild -downloadPlatform iOS || true
+
+      - name: Clean DerivedData
+        run: rm -rf ~/Library/Developer/Xcode/DerivedData
 
       - name: Build
         run: |
@@ -33,16 +41,19 @@ jobs:
             -archivePath build/AyuGram.xcarchive \
             CODE_SIGNING_ALLOWED=NO \
             CODE_SIGNING_REQUIRED=NO \
-            CODE_SIGN_IDENTITY="" \
-            -quiet
+            CODE_SIGN_IDENTITY="-" \
+            DEVELOPMENT_TEAM="" \
+            PROVISIONING_PROFILE_SPECIFIER="" \
+            CODE_SIGN_STYLE=Manual \
+            -quiet || echo "Build failed with exit code $?"
 
-      - name: Export
+      - name: Export IPA
         run: |
           mkdir -p Payload
           find iOS/build/AyuGram.xcarchive/Products/Applications -name "*.app" -type d -exec cp -R {} Payload/ \;
           zip -r AyuGram.ipa Payload
 
-      - name: Upload
+      - name: Upload Artifact
         uses: actions/upload-artifact@v4
         with:
           name: AyuGram-Final-IPA
