@@ -20,10 +20,10 @@ jobs:
       - name: Build & Archive
         run: |
           cd iOS
-          # Принудительно ставим Swift 5 и отключаем предупреждения как ошибки
           xcodebuild archive \
             -scheme AyuGram \
             -destination "generic/platform=iOS" \
+            -sdk iphoneos \
             -archivePath build/AyuGram.xcarchive \
             CODE_SIGNING_ALLOWED=NO \
             CODE_SIGNING_REQUIRED=NO \
