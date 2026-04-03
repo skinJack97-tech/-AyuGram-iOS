@@ -15,10 +15,16 @@ jobs:
 
       - name: Fix Project Files
         run: |
-          # Возвращаем v26 (iOS 18)
           find . -name "Package.swift" -exec sed -i '' 's/\.v15/\.v26/g' {} +
           find . -name "Package.swift" -exec sed -i '' 's/\.v24/\.v26/g' {} +
           find . -name "Package.swift" -exec sed -i '' 's/branch: "master"/branch: "main"/g' {} +
+
+      - name: Fix Skip Install for Archive
+        run: |
+          echo "🔧 Fixing Skip Install = YES → NO ..."
+          find . -name "project.pbxproj" -exec sed -i '' 's/SKIP_INSTALL = YES;/SKIP_INSTALL = NO;/g' {} +
+          find . -name "project.pbxproj" -exec sed -i '' 's/SKIP_INSTALL = YES/SKIP_INSTALL = NO/g' {} +
+          echo "✅ Skip Install fixed"
 
       - name: Select Xcode 16
         run: |
@@ -26,8 +32,7 @@ jobs:
           xcodebuild -version
 
       - name: Install iOS 18 SDK
-        run: |
-          xcodebuild -downloadPlatform iOS || true
+        run: xcodebuild -downloadPlatform iOS || true
 
       - name: Clean DerivedData
         run: rm -rf ~/Library/Developer/Xcode/DerivedData
@@ -50,34 +55,27 @@ jobs:
 
       - name: Debug - Show archive structure
         run: |
-          echo "=== Contents of build directory ==="
+          echo "=== build directory ==="
           ls -la iOS/build/ || true
-          echo "=== xcarchive structure (if exists) ==="
+          echo "=== xcarchive ==="
           ls -la iOS/build/AyuGram.xcarchive/ || true
-          echo "=== Products/Applications (if exists) ==="
+          echo "=== Applications ==="
           ls -la iOS/build/AyuGram.xcarchive/Products/Applications/ || true
-          echo "=== Full build log last 50 lines ==="
-          tail -n 50 iOS/build.log || true
+          echo "=== Last 60 lines of build.log ==="
+          tail -n 60 iOS/build.log || true
 
       - name: Export IPA
         run: |
           cd iOS
-          
-          if [ ! -d "build/AyuGram.xcarchive/Products/Applications" ]; then
-            echo "❌ Ошибка: xcarchive пустой или не создан!"
-            echo "Проверь лог выше. Чаще всего проблема в схеме AyuGram (Skip Install = YES или неправильная конфигурация для Archive)."
+          if [ ! -d "build/AyuGram.xcarchive/Products/Applications" ] || [ -z "$(ls -A build/AyuGram.xcarchive/Products/Applications/ 2>/dev/null)" ]; then
+            echo "❌ xcarchive всё ещё пустой!"
             exit 1
           fi
           
           mkdir -p Payload
           find build/AyuGram.xcarchive/Products/Applications -name "*.app" -type d -exec cp -R {} Payload/ \;
-          
-          if [ ! -d "Payload/AyuGram.app" ]; then
-            echo "❌ Не найдено AyuGram.app внутри архива"
-            exit 1
-          fi
-          
           zip -r AyuGram.ipa Payload
+          echo "✅ IPA created successfully"
 
       - name: Upload IPA
         uses: actions/upload-artifact@v4
@@ -85,7 +83,7 @@ jobs:
           name: AyuGram-Final-IPA
           path: iOS/AyuGram.ipa
 
-      - name: Upload Build Log (for debugging)
+      - name: Upload Build Log
         if: always()
         uses: actions/upload-artifact@v4
         with:
