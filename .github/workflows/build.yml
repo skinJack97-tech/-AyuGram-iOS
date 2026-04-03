@@ -9,9 +9,9 @@ jobs:
         with:
           submodules: recursive
 
-      - name: Force Patch
+      - name: Patch Project
         run: |
-          # Исправляем iOS 18 и ветки, как и раньше
+          # Исправляем только критические нестыковки в версии и ветках
           find . -name "Package.swift" -exec sed -i '' 's/\.v26/\.v15/g' {} +
           find . -name "Package.swift" -exec sed -i '' 's/branch: "master"/branch: "main"/g' {} +
 
@@ -21,23 +21,18 @@ jobs:
       - name: Build
         run: |
           cd iOS
-          # Используем максимально агрессивный пропуск всех проверок пакетов
           xcodebuild archive \
             -scheme AyuGram \
-            -configuration Release \
             -destination "generic/platform=iOS" \
             -archivePath build/AyuGram.xcarchive \
-            -skipPackageDependencyValidation \
-            -skipPackageFingerprintValidation \
             CODE_SIGNING_ALLOWED=NO \
             CODE_SIGNING_REQUIRED=NO \
-            CODE_SIGN_IDENTITY="" \
-            AD_HOC_CODE_SIGNING_ALLOWED=YES
+            CODE_SIGN_IDENTITY=""
 
       - name: Export
         run: |
           mkdir -p Payload
-          # Копируем приложение из архива
+          # Ищем приложение внутри архива и копируем его для упаковки в IPA
           find iOS/build/AyuGram.xcarchive/Products/Applications -name "*.app" -type d -exec cp -R {} Payload/ \;
           zip -r AyuGram.ipa Payload
 
