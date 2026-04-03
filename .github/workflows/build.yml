@@ -3,7 +3,6 @@ on: workflow_dispatch
 
 jobs:
   build:
-    # Переключаемся на самую новую версию сервера
     runs-on: macos-15
     steps:
       - uses: actions/checkout@v4
@@ -13,7 +12,6 @@ jobs:
       - name: Build with Xcode
         run: |
           cd iOS
-          # Собираем проект, игнорируя ошибки подписи (т.к. у нас нет платного аккаунта разработчика)
           xcodebuild archive \
             -scheme AyuGram \
             -destination "generic/platform=iOS" \
@@ -25,7 +23,6 @@ jobs:
       - name: Export IPA
         run: |
           mkdir -p build/Payload
-          # Копируем само приложение в папку Payload для создания IPA
           cp -R iOS/build/AyuGram.xcarchive/Products/Applications/*.app build/Payload/
           cd build
           zip -r AyuGram.ipa Payload
