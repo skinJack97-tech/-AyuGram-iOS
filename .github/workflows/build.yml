@@ -11,15 +11,11 @@ jobs:
           
       - name: Build IPA
         run: |
-          # Находим точный путь к Make.py
-          MAKE_PATH=$(find $GITHUB_WORKSPACE -name "Make.py" | head -n 1)
-          MAKE_DIR=$(dirname "$MAKE_PATH")
+          # Заходим в папку iOS, где лежит проект
+          cd iOS
           
-          echo "Full path to script: $MAKE_PATH"
-          
-          # Переходим в папку со скриптом и запускаем его
-          cd "$MAKE_DIR"
-          python3 Make.py \
+          # Запускаем скрипт сборки по его точному пути внутри iOS
+          python3 build-system/Make/Make.py \
           --cacheDir="$HOME/telegram-bazel-cache" \
           build \
           --configuration=release \
@@ -30,4 +26,4 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: AyuGram-Final-IPA
-          path: "**/*.ipa"
+          path: "**/artifacts/*.ipa"
