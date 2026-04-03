@@ -3,7 +3,8 @@ on: workflow_dispatch
 
 jobs:
   build:
-    runs-on: macos-latest
+    # Переключаемся на самую новую версию сервера
+    runs-on: macos-15
     steps:
       - uses: actions/checkout@v4
         with:
@@ -11,26 +12,26 @@ jobs:
           
       - name: Build with Xcode
         run: |
-          # Заходим в папку с проектом
           cd iOS
-          
-          # Запускаем официальную сборку Xcode для архитектуры iPhone
+          # Собираем проект, игнорируя ошибки подписи (т.к. у нас нет платного аккаунта разработчика)
           xcodebuild archive \
             -scheme AyuGram \
             -destination "generic/platform=iOS" \
             -archivePath build/AyuGram.xcarchive \
-            CODE_SIGNING_ALLOWED=NO
+            CODE_SIGNING_ALLOWED=NO \
+            CODE_SIGNING_REQUIRED=NO \
+            CODE_SIGN_IDENTITY=""
             
       - name: Export IPA
         run: |
-          # Создаем папку для IPA и упаковываем приложение
-          mkdir -p build/artifacts
-          mv iOS/build/AyuGram.xcarchive/Products/Applications/*.app iOS/build/artifacts/Payload
-          cd iOS/build/artifacts
+          mkdir -p build/Payload
+          # Копируем само приложение в папку Payload для создания IPA
+          cp -R iOS/build/AyuGram.xcarchive/Products/Applications/*.app build/Payload/
+          cd build
           zip -r AyuGram.ipa Payload
           
       - name: Upload
         uses: actions/upload-artifact@v4
         with:
           name: AyuGram-Final-IPA
-          path: iOS/build/artifacts/AyuGram.ipa
+          path: build/AyuGram.ipa
